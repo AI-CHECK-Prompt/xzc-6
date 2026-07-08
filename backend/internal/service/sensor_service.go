@@ -12,6 +12,8 @@ import (
 	"windpower-monitor/pkg/redis"
 )
 
+const turbineStatusTTL = 300
+
 type SensorService interface {
 	CollectSensorData(sensorData *model.SensorData) error
 	GetSensorDataByTurbineID(turbineID uint) ([]model.SensorData, error)
@@ -64,7 +66,7 @@ func (s *sensorService) CollectSensorData(sensorData *model.SensorData) error {
 	}
 
 	key := "turbine:status:" + strconv.Itoa(int(sensorData.TurbineID))
-	err = redis.Set(key, string(jsonData), 0)
+	err = redis.Set(key, string(jsonData), turbineStatusTTL)
 	if err != nil {
 		return err
 	}
@@ -97,7 +99,7 @@ func (s *sensorService) GetTurbineStatus(turbineID uint) (*model.TurbineStatus, 
 
 		jsonData, marshalErr := json.Marshal(status)
 		if marshalErr == nil {
-			setErr := redis.Set(key, string(jsonData), 300)
+			setErr := redis.Set(key, string(jsonData), turbineStatusTTL)
 			if setErr != nil {
 				log.Printf("【Redis-回填】回填风机状态缓存失败，turbineID=%d, error=%v", turbineID, setErr)
 			}

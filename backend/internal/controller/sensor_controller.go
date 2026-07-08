@@ -124,20 +124,27 @@ func ExportData(c *gin.Context) {
 
 	headers := []string{"ID", "风机ID", "时间戳", "转速(RPM)", "功率(kW)", "温度(°C)", "湿度(%)", "振动", "采集时间"}
 	for i, header := range headers {
-		f.SetCellValue(sheet, string(rune('A'+i))+"1", header)
+		cellName, _ := excelize.CoordinateToCellName(i+1, 1)
+		f.SetCellValue(sheet, cellName, header)
 	}
 
 	for i, item := range data {
 		row := i + 2
-		f.SetCellValue(sheet, "A"+strconv.Itoa(row), item.ID)
-		f.SetCellValue(sheet, "B"+strconv.Itoa(row), item.TurbineID)
-		f.SetCellValue(sheet, "C"+strconv.Itoa(row), item.Timestamp.Format(time.RFC3339))
-		f.SetCellValue(sheet, "D"+strconv.Itoa(row), item.RPM)
-		f.SetCellValue(sheet, "E"+strconv.Itoa(row), item.Power)
-		f.SetCellValue(sheet, "F"+strconv.Itoa(row), item.Temperature)
-		f.SetCellValue(sheet, "G"+strconv.Itoa(row), item.Humidity)
-		f.SetCellValue(sheet, "H"+strconv.Itoa(row), item.Vibration)
-		f.SetCellValue(sheet, "I"+strconv.Itoa(row), item.CreatedAt.Format(time.RFC3339))
+		values := []interface{}{
+			item.ID,
+			item.TurbineID,
+			item.Timestamp.Format(time.RFC3339),
+			item.RPM,
+			item.Power,
+			item.Temperature,
+			item.Humidity,
+			item.Vibration,
+			item.CreatedAt.Format(time.RFC3339),
+		}
+		for col, value := range values {
+			cellName, _ := excelize.CoordinateToCellName(col+1, row)
+			f.SetCellValue(sheet, cellName, value)
+		}
 	}
 
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
