@@ -3,12 +3,16 @@ import { ref } from 'vue'
 import { ElContainer, ElAside, ElMenu, ElMenuItem, ElMain } from 'element-plus'
 import TurbineList from './components/TurbineList.vue'
 import MonitorDashboard from './components/MonitorDashboard.vue'
+import TrendAnalysis from './components/TrendAnalysis.vue'
+import StatisticsAnalysis from './components/StatisticsAnalysis.vue'
 
 const activeMenu = ref('monitor')
 
 const menuItems = [
   { key: 'monitor', label: '实时监控' },
-  { key: 'turbine', label: '设备管理' }
+  { key: 'turbine', label: '设备管理' },
+  { key: 'trend', label: '趋势分析' },
+  { key: 'statistics', label: '统计分析' }
 ]
 </script>
 
@@ -34,6 +38,8 @@ const menuItems = [
     <ElMain>
       <MonitorDashboard v-if="activeMenu === 'monitor'" />
       <TurbineList v-else-if="activeMenu === 'turbine'" />
+      <TrendAnalysis v-else-if="activeMenu === 'trend'" />
+      <StatisticsAnalysis v-else-if="activeMenu === 'statistics'" />
     </ElMain>
   </ElContainer>
 </template>

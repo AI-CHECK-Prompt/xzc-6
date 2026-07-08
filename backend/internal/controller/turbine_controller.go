@@ -101,3 +101,14 @@ func DeleteTurbine(c *gin.Context) {
 
 	c.JSON(http.StatusNoContent, nil)
 }
+
+func GetSystemStatistics(c *gin.Context) {
+	svc := service.NewTurbineService()
+	stats, err := svc.GetSystemStatistics()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
+}

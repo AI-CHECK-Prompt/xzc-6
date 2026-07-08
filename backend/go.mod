@@ -9,6 +9,7 @@ require (
 	github.com/jinzhu/gorm v1.9.16
 	github.com/lib/pq v1.10.9
 	github.com/spf13/viper v1.19.0
+	github.com/xuri/excelize/v2 v2.8.0
 )
 
 require (

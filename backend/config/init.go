@@ -11,8 +11,15 @@ func Init() {
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath("./config")
 
+	viper.AutomaticEnv()
+
+	viper.SetDefault("database.host", "localhost")
+	viper.SetDefault("database.port", "5432")
+	viper.SetDefault("redis.host", "localhost")
+	viper.SetDefault("redis.port", "6379")
+
 	err := viper.ReadInConfig()
 	if err != nil {
-		log.Fatalf("Failed to read config file: %v", err)
+		log.Printf("Warning: Failed to read config file: %v", err)
 	}
 }

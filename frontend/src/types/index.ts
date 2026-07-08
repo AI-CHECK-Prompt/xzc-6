@@ -33,6 +33,25 @@ export interface TurbineStatus {
   timestamp: string
 }
 
+export interface TurbineStatistics {
+  turbine_id: number
+  count: number
+  avg_power: number
+  max_power: number
+  min_power: number
+  avg_temperature: number
+  avg_vibration: number
+}
+
+export interface SystemStatistics {
+  total_turbines: number
+  running_turbines: number
+  fault_turbines: number
+  maintenance_count: number
+  avg_power: number
+  total_power: number
+}
+
 export interface ApiResponse<T = any> {
   data: T
   code: number

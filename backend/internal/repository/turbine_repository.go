@@ -11,6 +11,7 @@ type TurbineRepository interface {
 	GetAll() ([]model.WindTurbine, error)
 	Update(turbine *model.WindTurbine) error
 	Delete(id uint) error
+	GetStatistics() (*model.SystemStatistics, error)
 }
 
 type turbineRepository struct{}
@@ -41,4 +42,40 @@ func (r *turbineRepository) Update(turbine *model.WindTurbine) error {
 
 func (r *turbineRepository) Delete(id uint) error {
 	return database.DB.Delete(&model.WindTurbine{}, id).Error
+}
+
+func (r *turbineRepository) GetStatistics() (*model.SystemStatistics, error) {
+	var stats model.SystemStatistics
+	
+	err := database.DB.Model(&model.WindTurbine{}).Count(&stats.TotalTurbines).Error
+	if err != nil {
+		return nil, err
+	}
+	
+	err = database.DB.Model(&model.WindTurbine{}).Where("status = ?", "running").Count(&stats.RunningTurbines).Error
+	if err != nil {
+		return nil, err
+	}
+	
+	err = database.DB.Model(&model.WindTurbine{}).Where("status = ?", "fault").Count(&stats.FaultTurbines).Error
+	if err != nil {
+		return nil, err
+	}
+	
+	err = database.DB.Model(&model.WindTurbine{}).Where("status = ?", "maintenance").Count(&stats.MaintenanceCount).Error
+	if err != nil {
+		return nil, err
+	}
+	
+	err = database.DB.Model(&model.SensorData{}).Select("AVG(power)").Scan(&stats.AvgPower).Error
+	if err != nil {
+		return nil, err
+	}
+	
+	err = database.DB.Model(&model.SensorData{}).Select("SUM(power)").Scan(&stats.TotalPower).Error
+	if err != nil {
+		return nil, err
+	}
+	
+	return &stats, nil
 }

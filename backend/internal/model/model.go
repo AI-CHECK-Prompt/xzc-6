@@ -41,6 +41,25 @@ type TurbineStatus struct {
 	Timestamp   string  `json:"timestamp"`
 }
 
+type TurbineStatistics struct {
+	TurbineID       uint    `json:"turbine_id"`
+	Count           int     `json:"count"`
+	AvgPower        float64 `json:"avg_power"`
+	MaxPower        float64 `json:"max_power"`
+	MinPower        float64 `json:"min_power"`
+	AvgTemperature  float64 `json:"avg_temperature"`
+	AvgVibration    float64 `json:"avg_vibration"`
+}
+
+type SystemStatistics struct {
+	TotalTurbines    int     `json:"total_turbines"`
+	RunningTurbines  int     `json:"running_turbines"`
+	FaultTurbines    int     `json:"fault_turbines"`
+	MaintenanceCount int     `json:"maintenance_count"`
+	AvgPower         float64 `json:"avg_power"`
+	TotalPower       float64 `json:"total_power"`
+}
+
 func AutoMigrate(db *gorm.DB) {
 	db.AutoMigrate(&WindTurbine{}, &SensorData{})
 }

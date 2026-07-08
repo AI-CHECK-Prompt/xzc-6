@@ -11,6 +11,7 @@ type TurbineService interface {
 	GetAllTurbines() ([]model.WindTurbine, error)
 	UpdateTurbine(turbine *model.WindTurbine) error
 	DeleteTurbine(id uint) error
+	GetSystemStatistics() (*model.SystemStatistics, error)
 }
 
 type turbineService struct {
@@ -41,4 +42,8 @@ func (s *turbineService) UpdateTurbine(turbine *model.WindTurbine) error {
 
 func (s *turbineService) DeleteTurbine(id uint) error {
 	return s.repo.Delete(id)
+}
+
+func (s *turbineService) GetSystemStatistics() (*model.SystemStatistics, error) {
+	return s.repo.GetStatistics()
 }

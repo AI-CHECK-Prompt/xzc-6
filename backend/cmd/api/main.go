@@ -47,6 +47,14 @@ func main() {
 			data.POST("/collect", controller.CollectSensorData)
 			data.GET("/turbine/:id", controller.GetTurbineData)
 			data.GET("/status/:id", controller.GetTurbineStatus)
+			data.GET("/trend/:id", controller.GetTrendData)
+			data.GET("/statistics", controller.GetStatistics)
+			data.GET("/export/:id", controller.ExportData)
+		}
+
+		stats := api.Group("/statistics")
+		{
+			stats.GET("/system", controller.GetSystemStatistics)
 		}
 	}
 

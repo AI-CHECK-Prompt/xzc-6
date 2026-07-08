@@ -13,6 +13,10 @@ type SensorService interface {
 	CollectSensorData(sensorData *model.SensorData) error
 	GetSensorDataByTurbineID(turbineID uint) ([]model.SensorData, error)
 	GetTurbineStatus(turbineID uint) (*model.TurbineStatus, error)
+	GetTrendData(turbineID uint, startTime, endTime string) ([]model.SensorData, error)
+	GetTurbineStatistics(turbineID uint, startTime, endTime string) (*model.TurbineStatistics, error)
+	GetAllTurbineStatistics(startTime, endTime string) ([]model.TurbineStatistics, error)
+	ExportData(turbineID uint, startTime, endTime string) ([]model.SensorData, error)
 }
 
 type sensorService struct {
@@ -85,4 +89,20 @@ func (s *sensorService) GetTurbineStatus(turbineID uint) (*model.TurbineStatus, 
 	}
 
 	return &status, nil
+}
+
+func (s *sensorService) GetTrendData(turbineID uint, startTime, endTime string) ([]model.SensorData, error) {
+	return s.repo.GetByTimeRange(turbineID, startTime, endTime)
+}
+
+func (s *sensorService) GetTurbineStatistics(turbineID uint, startTime, endTime string) (*model.TurbineStatistics, error) {
+	return s.repo.GetStatisticsByTurbine(turbineID, startTime, endTime)
+}
+
+func (s *sensorService) GetAllTurbineStatistics(startTime, endTime string) ([]model.TurbineStatistics, error) {
+	return s.repo.GetAllStatistics(startTime, endTime)
+}
+
+func (s *sensorService) ExportData(turbineID uint, startTime, endTime string) ([]model.SensorData, error) {
+	return s.repo.GetByTimeRange(turbineID, startTime, endTime)
 }
