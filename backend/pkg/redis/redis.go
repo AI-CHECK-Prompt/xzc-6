@@ -2,6 +2,9 @@ package redis
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/spf13/viper"
@@ -35,7 +38,7 @@ func Close() {
 }
 
 func Set(key string, value interface{}, expiration int) error {
-	return RedisClient.Set(ctx, key, value, 0).Err()
+	return RedisClient.Set(ctx, key, value, time.Duration(expiration)*time.Second).Err()
 }
 
 func Get(key string) (string, error) {
@@ -44,4 +47,33 @@ func Get(key string) (string, error) {
 
 func Del(key string) error {
 	return RedisClient.Del(ctx, key).Err()
+}
+
+func AcquireLock(key string, ttl int) (string, error) {
+	token := generateToken()
+	result, err := RedisClient.SetNX(ctx, key, token, time.Duration(ttl)*time.Second).Result()
+	if err != nil {
+		return "", err
+	}
+	if !result {
+		return "", nil
+	}
+	return token, nil
+}
+
+func ReleaseLock(key string, token string) error {
+	currentToken, err := RedisClient.Get(ctx, key).Result()
+	if err != nil {
+		return nil
+	}
+	if currentToken == token {
+		return RedisClient.Del(ctx, key).Err()
+	}
+	return nil
+}
+
+func generateToken() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
 }

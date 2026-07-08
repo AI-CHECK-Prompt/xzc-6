@@ -2,6 +2,8 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
+	"log"
 	"strconv"
 	"time"
 
@@ -31,7 +33,17 @@ func NewSensorService() SensorService {
 }
 
 func (s *sensorService) CollectSensorData(sensorData *model.SensorData) error {
-	err := s.repo.Create(sensorData)
+	lockKey := "turbine:lock:" + strconv.Itoa(int(sensorData.TurbineID))
+	token, err := redis.AcquireLock(lockKey, 10)
+	if err != nil {
+		return err
+	}
+	if token == "" {
+		return errors.New("turbine lock busy")
+	}
+	defer redis.ReleaseLock(lockKey, token)
+
+	err = s.repo.Create(sensorData)
 	if err != nil {
 		return err
 	}
@@ -72,7 +84,8 @@ func (s *sensorService) GetTurbineStatus(turbineID uint) (*model.TurbineStatus, 
 		if err != nil {
 			return nil, err
 		}
-		return &model.TurbineStatus{
+
+		status := &model.TurbineStatus{
 			TurbineID:   sensorData.TurbineID,
 			RPM:         sensorData.RPM,
 			Power:       sensorData.Power,
@@ -80,7 +93,17 @@ func (s *sensorService) GetTurbineStatus(turbineID uint) (*model.TurbineStatus, 
 			Humidity:    sensorData.Humidity,
 			Vibration:   sensorData.Vibration,
 			Timestamp:   sensorData.CreatedAt.Format(time.RFC3339),
-		}, nil
+		}
+
+		jsonData, marshalErr := json.Marshal(status)
+		if marshalErr == nil {
+			setErr := redis.Set(key, string(jsonData), 300)
+			if setErr != nil {
+				log.Printf("【Redis-回填】回填风机状态缓存失败，turbineID=%d, error=%v", turbineID, setErr)
+			}
+		}
+
+		return status, nil
 	}
 
 	var status model.TurbineStatus
