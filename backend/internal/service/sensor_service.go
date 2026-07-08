@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"windpower-monitor/internal/model"
@@ -50,7 +51,7 @@ func (s *sensorService) CollectSensorData(sensorData *model.SensorData) error {
 		return err
 	}
 
-	key := "turbine:status:" + string(rune(sensorData.TurbineID+'0'))
+	key := "turbine:status:" + strconv.Itoa(int(sensorData.TurbineID))
 	err = redis.Set(key, string(jsonData), 0)
 	if err != nil {
 		return err
@@ -64,7 +65,7 @@ func (s *sensorService) GetSensorDataByTurbineID(turbineID uint) ([]model.Sensor
 }
 
 func (s *sensorService) GetTurbineStatus(turbineID uint) (*model.TurbineStatus, error) {
-	key := "turbine:status:" + string(rune(turbineID+'0'))
+	key := "turbine:status:" + strconv.Itoa(int(turbineID))
 	data, err := redis.Get(key)
 	if err != nil {
 		sensorData, err := s.repo.GetLatestByTurbineID(turbineID)
