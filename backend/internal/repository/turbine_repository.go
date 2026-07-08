@@ -11,7 +11,7 @@ type TurbineRepository interface {
 	GetAll() ([]model.WindTurbine, error)
 	Update(turbine *model.WindTurbine) error
 	Delete(id uint) error
-	GetStatistics() (*model.SystemStatistics, error)
+	GetStatistics(startTime, endTime string) (*model.SystemStatistics, error)
 }
 
 type turbineRepository struct{}
@@ -44,7 +44,7 @@ func (r *turbineRepository) Delete(id uint) error {
 	return database.DB.Delete(&model.WindTurbine{}, id).Error
 }
 
-func (r *turbineRepository) GetStatistics() (*model.SystemStatistics, error) {
+func (r *turbineRepository) GetStatistics(startTime, endTime string) (*model.SystemStatistics, error) {
 	var stats model.SystemStatistics
 	
 	err := database.DB.Model(&model.WindTurbine{}).Count(&stats.TotalTurbines).Error
@@ -67,12 +67,17 @@ func (r *turbineRepository) GetStatistics() (*model.SystemStatistics, error) {
 		return nil, err
 	}
 	
-	err = database.DB.Model(&model.SensorData{}).Select("AVG(power)").Scan(&stats.AvgPower).Error
+	sensorQuery := database.DB.Model(&model.SensorData{})
+	if startTime != "" && endTime != "" {
+		sensorQuery = sensorQuery.Where("created_at BETWEEN ? AND ?", startTime, endTime)
+	}
+	
+	err = sensorQuery.Select("AVG(power)").Scan(&stats.AvgPower).Error
 	if err != nil {
 		return nil, err
 	}
 	
-	err = database.DB.Model(&model.SensorData{}).Select("SUM(power)").Scan(&stats.TotalPower).Error
+	err = sensorQuery.Select("SUM(power)").Scan(&stats.TotalPower).Error
 	if err != nil {
 		return nil, err
 	}

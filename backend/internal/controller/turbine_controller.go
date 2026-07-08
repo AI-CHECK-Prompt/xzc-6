@@ -103,8 +103,11 @@ func DeleteTurbine(c *gin.Context) {
 }
 
 func GetSystemStatistics(c *gin.Context) {
+	startTime := c.Query("start_time")
+	endTime := c.Query("end_time")
+
 	svc := service.NewTurbineService()
-	stats, err := svc.GetSystemStatistics()
+	stats, err := svc.GetSystemStatistics(startTime, endTime)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
