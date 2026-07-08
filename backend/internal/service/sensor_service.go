@@ -1,0 +1,88 @@
+package service
+
+import (
+	"encoding/json"
+	"time"
+
+	"windpower-monitor/internal/model"
+	"windpower-monitor/internal/repository"
+	"windpower-monitor/pkg/redis"
+)
+
+type SensorService interface {
+	CollectSensorData(sensorData *model.SensorData) error
+	GetSensorDataByTurbineID(turbineID uint) ([]model.SensorData, error)
+	GetTurbineStatus(turbineID uint) (*model.TurbineStatus, error)
+}
+
+type sensorService struct {
+	repo repository.SensorRepository
+}
+
+func NewSensorService() SensorService {
+	return &sensorService{
+		repo: repository.NewSensorRepository(),
+	}
+}
+
+func (s *sensorService) CollectSensorData(sensorData *model.SensorData) error {
+	err := s.repo.Create(sensorData)
+	if err != nil {
+		return err
+	}
+
+	status := &model.TurbineStatus{
+		TurbineID:   sensorData.TurbineID,
+		RPM:         sensorData.RPM,
+		Power:       sensorData.Power,
+		Temperature: sensorData.Temperature,
+		Humidity:    sensorData.Humidity,
+		Vibration:   sensorData.Vibration,
+		Timestamp:   time.Now().Format(time.RFC3339),
+	}
+
+	jsonData, err := json.Marshal(status)
+	if err != nil {
+		return err
+	}
+
+	key := "turbine:status:" + string(rune(sensorData.TurbineID+'0'))
+	err = redis.Set(key, string(jsonData), 0)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *sensorService) GetSensorDataByTurbineID(turbineID uint) ([]model.SensorData, error) {
+	return s.repo.GetByTurbineID(turbineID)
+}
+
+func (s *sensorService) GetTurbineStatus(turbineID uint) (*model.TurbineStatus, error) {
+	key := "turbine:status:" + string(rune(turbineID+'0'))
+	data, err := redis.Get(key)
+	if err != nil {
+		sensorData, err := s.repo.GetLatestByTurbineID(turbineID)
+		if err != nil {
+			return nil, err
+		}
+		return &model.TurbineStatus{
+			TurbineID:   sensorData.TurbineID,
+			RPM:         sensorData.RPM,
+			Power:       sensorData.Power,
+			Temperature: sensorData.Temperature,
+			Humidity:    sensorData.Humidity,
+			Vibration:   sensorData.Vibration,
+			Timestamp:   sensorData.CreatedAt.Format(time.RFC3339),
+		}, nil
+	}
+
+	var status model.TurbineStatus
+	err = json.Unmarshal([]byte(data), &status)
+	if err != nil {
+		return nil, err
+	}
+
+	return &status, nil
+}
