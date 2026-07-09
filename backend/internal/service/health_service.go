@@ -383,8 +383,9 @@ func (s *healthService) HandleTurbineStatusChange(turbineID uint, oldStatus, new
 		log.Printf("【健康计算-状态变更】风机%d从%s恢复运行，触发补算", turbineID, oldStatus)
 
 		latestSnapshot, err := s.healthRepo.GetLatestSnapshot(turbineID)
-		if err != nil {
-			return nil
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			log.Printf("【健康计算-状态变更】风机%d获取最新快照失败: %v", turbineID, err)
+			return err
 		}
 
 		if latestSnapshot.ID > 0 {
@@ -396,11 +397,12 @@ func (s *healthService) HandleTurbineStatusChange(turbineID uint, oldStatus, new
 			}
 		}
 
-		go func() {
-			if err := s.TriggerIncrementalCalc(turbineID); err != nil {
-				log.Printf("【健康计算-增量计算】风机%d增量计算失败: %v", turbineID, err)
-			}
-		}()
+		if err := s.TriggerIncrementalCalc(turbineID); err != nil {
+			log.Printf("【健康计算-增量计算】风机%d增量计算失败: %v", turbineID, err)
+			return err
+		}
+
+		log.Printf("【健康计算-状态变更】风机%d健康数据同步完成", turbineID)
 	}
 	return nil
 }

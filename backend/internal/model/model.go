@@ -153,6 +153,22 @@ type CalcRecord struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+type StatusChangeEvent struct {
+	ID             uint      `gorm:"primary_key" json:"id"`
+	TurbineID      uint      `json:"turbine_id"`
+	OldStatus      string    `gorm:"size:20" json:"old_status"`
+	NewStatus      string    `gorm:"size:20" json:"new_status"`
+	EventStatus    string    `gorm:"size:20;default:pending" json:"event_status"`
+	RetryCount     int       `gorm:"default:0" json:"retry_count"`
+	MaxRetry       int       `gorm:"default:3" json:"max_retry"`
+	ErrorMessage   string    `gorm:"size:1000" json:"error_message"`
+	ProcessedAt    *time.Time `json:"processed_at"`
+	CompensatedAt  *time.Time `json:"compensated_at"`
+	CompensatedBy  string    `gorm:"size:50" json:"compensated_by"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
+
 func AutoMigrate(db *gorm.DB) {
-	db.AutoMigrate(&WindTurbine{}, &SensorData{}, &HealthTemplate{}, &HealthConfig{}, &HealthSnapshot{}, &HealthAlert{}, &ManualAdjustment{}, &CalcRecord{})
+	db.AutoMigrate(&WindTurbine{}, &SensorData{}, &HealthTemplate{}, &HealthConfig{}, &HealthSnapshot{}, &HealthAlert{}, &ManualAdjustment{}, &CalcRecord{}, &StatusChangeEvent{})
 }

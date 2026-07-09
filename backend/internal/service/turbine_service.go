@@ -1,6 +1,8 @@
 package service
 
 import (
+	"time"
+
 	"windpower-monitor/internal/model"
 	"windpower-monitor/internal/repository"
 )
@@ -16,13 +18,13 @@ type TurbineService interface {
 
 type turbineService struct {
 	repo        repository.TurbineRepository
-	healthService HealthService
+	eventRepo   repository.EventRepository
 }
 
 func NewTurbineService() TurbineService {
 	return &turbineService{
-		repo:          repository.NewTurbineRepository(),
-		healthService: NewHealthService(),
+		repo:        repository.NewTurbineRepository(),
+		eventRepo:   repository.NewEventRepository(),
 	}
 }
 
@@ -49,7 +51,18 @@ func (s *turbineService) UpdateTurbine(turbine *model.WindTurbine) error {
 	}
 
 	if oldTurbine.Status != turbine.Status {
-		if err := s.healthService.HandleTurbineStatusChange(turbine.ID, oldTurbine.Status, turbine.Status); err != nil {
+		event := &model.StatusChangeEvent{
+			TurbineID:    turbine.ID,
+			OldStatus:    oldTurbine.Status,
+			NewStatus:    turbine.Status,
+			EventStatus:  "pending",
+			RetryCount:   0,
+			MaxRetry:     3,
+			CreatedAt:    time.Now(),
+			UpdatedAt:    time.Now(),
+		}
+
+		if err := s.eventRepo.CreateEvent(event); err != nil {
 			return err
 		}
 	}

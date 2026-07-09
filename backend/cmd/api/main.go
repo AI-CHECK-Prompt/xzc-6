@@ -32,6 +32,8 @@ func main() {
 	initHealthConfig()
 
 	go startHealthCalcScheduler()
+	go startEventProcessor()
+	go startConsistencyChecker()
 
 	r := gin.Default()
 
@@ -114,6 +116,29 @@ func startHealthCalcScheduler() {
 		if err := svc.CalculateAllTurbines(); err != nil {
 			log.Printf("【健康计算-定时任务】批量计算失败: %v", err)
 		}
+	}
+}
+
+func startEventProcessor() {
+	log.Printf("【事件处理器】启动事件处理器")
+	processor := service.NewEventProcessor()
+	processor.Start()
+}
+
+func startConsistencyChecker() {
+	log.Printf("【一致性检查】启动一致性检查定时任务")
+	for {
+		now := time.Now()
+		nextCheck := now.Truncate(time.Minute * 30).Add(time.Minute * 30)
+		sleepDuration := nextCheck.Sub(now)
+
+		log.Printf("【一致性检查】下次检查时间: %v", nextCheck)
+		time.Sleep(sleepDuration)
+
+		log.Printf("【一致性检查】开始执行状态与健康数据一致性检查")
+		processor := service.NewEventProcessor()
+		processor.ProcessPendingEvents()
+		processor.CheckConsistency()
 	}
 }
 
