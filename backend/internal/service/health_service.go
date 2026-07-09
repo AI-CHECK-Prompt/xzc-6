@@ -794,6 +794,12 @@ func (s *healthService) compressAndSaveSnapshot(snapshot *model.HealthSnapshot) 
 			latestSnapshot.Count++
 		}
 		latestSnapshot.EndTime = snapshot.Timestamp
+		latestSnapshot.HealthIndex = snapshot.HealthIndex
+		latestSnapshot.DataQuality = snapshot.DataQuality
+		latestSnapshot.RPMScore = snapshot.RPMScore
+		latestSnapshot.PowerScore = snapshot.PowerScore
+		latestSnapshot.TempScore = snapshot.TempScore
+		latestSnapshot.VibrationScore = snapshot.VibrationScore
 		return s.healthRepo.UpdateSnapshot(latestSnapshot)
 	}
 
