@@ -411,21 +411,14 @@ func (s *healthService) BackfillHealth(turbineID uint, startTime, endTime time.T
 		return err
 	}
 
-	template, err := s.healthRepo.GetDefaultTemplate()
-	if err != nil {
-		return err
-	}
-
 	turbine, err := s.turbineRepo.GetByID(turbineID)
 	if err != nil {
 		return err
 	}
 
-	if turbine.Model != "" {
-		modTemplate, _ := s.healthRepo.GetTemplateByModel(turbine.Model)
-		if modTemplate.ID > 0 {
-			template = modTemplate
-		}
+	template, err := s.getTemplate(turbine.Model)
+	if err != nil {
+		return err
 	}
 
 	currentTime := startTime
