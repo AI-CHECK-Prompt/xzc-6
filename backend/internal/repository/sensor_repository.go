@@ -9,6 +9,7 @@ type SensorRepository interface {
 	Create(sensorData *model.SensorData) error
 	GetByTurbineID(turbineID uint) ([]model.SensorData, error)
 	GetLatestByTurbineID(turbineID uint) (*model.SensorData, error)
+	GetLatestValidMetric(turbineID uint, metric string, min, max float64) (*model.SensorData, error)
 	GetByTimeRange(turbineID uint, startTime, endTime string) ([]model.SensorData, error)
 	GetStatisticsByTurbine(turbineID uint, startTime, endTime string) (*model.TurbineStatistics, error)
 	GetAllStatistics(startTime, endTime string) ([]model.TurbineStatistics, error)
@@ -33,6 +34,25 @@ func (r *sensorRepository) GetByTurbineID(turbineID uint) ([]model.SensorData, e
 func (r *sensorRepository) GetLatestByTurbineID(turbineID uint) (*model.SensorData, error) {
 	var sensorData model.SensorData
 	err := database.DB.Where("turbine_id = ?", turbineID).Order("created_at DESC").First(&sensorData).Error
+	return &sensorData, err
+}
+
+func (r *sensorRepository) GetLatestValidMetric(turbineID uint, metric string, min, max float64) (*model.SensorData, error) {
+	var sensorData model.SensorData
+	query := database.DB.Where("turbine_id = ?", turbineID)
+
+	switch metric {
+	case "rpm":
+		query = query.Where("rpm >= ? AND rpm <= ?", min, max)
+	case "power":
+		query = query.Where("power >= ? AND power <= ?", min, max)
+	case "temperature":
+		query = query.Where("temperature >= ? AND temperature <= ?", min, max)
+	case "vibration":
+		query = query.Where("vibration >= ? AND vibration <= ?", min, max)
+	}
+
+	err := query.Order("created_at DESC").First(&sensorData).Error
 	return &sensorData, err
 }
 

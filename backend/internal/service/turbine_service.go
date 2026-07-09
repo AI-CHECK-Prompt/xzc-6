@@ -15,12 +15,14 @@ type TurbineService interface {
 }
 
 type turbineService struct {
-	repo repository.TurbineRepository
+	repo        repository.TurbineRepository
+	healthService HealthService
 }
 
 func NewTurbineService() TurbineService {
 	return &turbineService{
-		repo: repository.NewTurbineRepository(),
+		repo:          repository.NewTurbineRepository(),
+		healthService: NewHealthService(),
 	}
 }
 
@@ -37,7 +39,22 @@ func (s *turbineService) GetAllTurbines() ([]model.WindTurbine, error) {
 }
 
 func (s *turbineService) UpdateTurbine(turbine *model.WindTurbine) error {
-	return s.repo.Update(turbine)
+	oldTurbine, err := s.repo.GetByID(turbine.ID)
+	if err != nil {
+		return err
+	}
+
+	if err := s.repo.Update(turbine); err != nil {
+		return err
+	}
+
+	if oldTurbine.Status != turbine.Status {
+		if err := s.healthService.HandleTurbineStatusChange(turbine.ID, oldTurbine.Status, turbine.Status); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *turbineService) DeleteTurbine(id uint) error {
