@@ -224,7 +224,49 @@ func (s *healthService) GetHealthHistory(turbineID uint, startTime, endTime stri
 	if err != nil {
 		return nil, err
 	}
-	return s.healthRepo.GetSnapshotsByTimeRange(turbineID, start, end)
+
+	snapshots, err := s.healthRepo.GetSnapshotsByTimeRange(turbineID, start, end)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.expandCompressedSnapshots(snapshots), nil
+}
+
+func (s *healthService) expandCompressedSnapshots(snapshots []model.HealthSnapshot) []model.HealthSnapshot {
+	var expanded []model.HealthSnapshot
+
+	for _, snapshot := range snapshots {
+		if snapshot.IsCompressed && snapshot.Count > 1 {
+			interval := snapshot.EndTime.Sub(snapshot.StartTime) / time.Duration(snapshot.Count)
+			for i := 0; i < snapshot.Count; i++ {
+				expandedSnapshot := model.HealthSnapshot{
+					ID:             snapshot.ID,
+					TurbineID:      snapshot.TurbineID,
+					HealthIndex:    snapshot.HealthIndex,
+					Timestamp:      snapshot.StartTime.Add(interval * time.Duration(i)),
+					StartTime:      snapshot.StartTime.Add(interval * time.Duration(i)),
+					EndTime:        snapshot.StartTime.Add(interval * time.Duration(i+1)),
+					Count:          1,
+					IsCompressed:   false,
+					IsBackfilled:   snapshot.IsBackfilled,
+					DataQuality:    snapshot.DataQuality,
+					RPMScore:       snapshot.RPMScore,
+					PowerScore:     snapshot.PowerScore,
+					TempScore:      snapshot.TempScore,
+					VibrationScore: snapshot.VibrationScore,
+					CreatedAt:      snapshot.CreatedAt,
+				}
+				expanded = append(expanded, expandedSnapshot)
+			}
+		} else {
+			snapshot.Count = 1
+			snapshot.IsCompressed = false
+			expanded = append(expanded, snapshot)
+		}
+	}
+
+	return expanded
 }
 
 func (s *healthService) GetActiveAlert(turbineID uint) (*model.HealthAlert, error) {
@@ -750,9 +792,14 @@ func (s *healthService) compressAndSaveSnapshot(snapshot *model.HealthSnapshot) 
 	}
 
 	if latestSnapshot.ID > 0 &&
-		math.Abs(latestSnapshot.HealthIndex-snapshot.HealthIndex) < 0.01 &&
-		latestSnapshot.IsCompressed {
-		latestSnapshot.Count++
+		math.Abs(latestSnapshot.HealthIndex-snapshot.HealthIndex) < 0.01 {
+		if !latestSnapshot.IsCompressed {
+			latestSnapshot.IsCompressed = true
+			latestSnapshot.Count = 2
+			latestSnapshot.StartTime = latestSnapshot.Timestamp
+		} else {
+			latestSnapshot.Count++
+		}
 		latestSnapshot.EndTime = snapshot.Timestamp
 		return s.healthRepo.UpdateSnapshot(latestSnapshot)
 	}
